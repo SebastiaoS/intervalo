@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Controle QHJ - Operacional</title>
+    <style>
+        :root { --primary: #2c3e50; --success: #198754; --warning: #ffc107; --danger: #dc3545; --bg: #f0f2f5; }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--primary); padding: 15px; }
+
+        .header { position: sticky; top: 0; background: var(--bg); padding: 10px 0 20px; z-index: 100; border-bottom: 2px solid #ddd; margin-bottom: 20px; text-align: center; }
+        .filtros { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 15px; }
+        .filtros button { padding: 8px 16px; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; background: #fff; border: 1px solid #ccc; font-size: 0.85rem; }
+        .filtros button.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .card { 
+            background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+            margin-bottom: 10px; display: flex; align-items: center; gap: 15px; transition: 0.3s;
+        }
+        
+        .nome { width: 130px; font-weight: bold; text-transform: capitalize; font-size: 1rem; }
+        .input-hora { width: 75px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; background: #f9f9f9; font-weight: bold; }
+        
+        .btn-control { width: 100px; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.7rem; }
+        .btn-start { background: var(--success); color: white; }
+        .btn-pause { background: var(--warning); color: #333; }
+
+        /* Barra de Progresso Adaptável */
+        .wrapper-barra { position: relative; flex-grow: 1; min-width: 200px; }
+        .progress-container { width: 100%; background: #eee; border-radius: 20px; height: 22px; overflow: hidden; border: 1px solid #ddd; position: relative; }
+        .progress-bar { width: 0%; height: 100%; transition: width 1s linear; }
+
+        .markers { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; pointer-events: none; }
+        .marker { flex: 1; border-right: 1px dashed rgba(0,0,0,0.2); height: 100%; position: relative; }
+        .marker::after { content: attr(data-label); position: absolute; bottom: -18px; right: -5px; font-size: 9px; color: #888; }
+
+        .relogio { min-width: 100px; font-family: monospace; font-size: 1.2rem; font-weight: bold; text-align: right; }
+        
+        .fase-red { background-color: var(--danger); }
+        .fase-orange { background-color: #fd7e14; }
+        .fase-green { background-color: var(--success); }
+        .qhj-done { color: var(--danger); animation: blink 0.8s infinite; }
+        .hidden { display: none !important; }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* RESPONSIVIDADE MOBILE */
+        @media (max-width: 768px) {
+            .card { flex-wrap: wrap; justify-content: space-between; }
+            .nome { width: 50%; order: 1; }
+            .input-hora { width: 40%; order: 2; }
+            .btn-control { width: 100%; order: 5; margin-top: 5px; padding: 15px; font-size: 0.9rem; }
+            .wrapper-barra { width: 100%; order: 3; margin: 15px 0; }
+            .relogio { width: 100%; order: 4; text-align: center; font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Monitoramento QHJ</h1>
+        <div class="filtros">
+            <button class="active" onclick="filtrar('todos', this)">Todos (<span id="count-todos">0</span>)</button>
+            <button onclick="filtrar('rodando', this)">Em curso</button>
+            <button onclick="filtrar('pausado', this)">Pausados</button>
+            <button onclick="filtrar('finalizado', this)">Realizados</button>
+        </div>
+    </div>
+
+    <div id="lista"></div>
+
+    <script>
+        // Lista atualizada e reordenada alfabeticamente
+        const motoristas = [
+            "alan", "carlos", "daniel", "david", "eder", "elcio", 
+            "fernando", "guilherme", "gustavo", "leandro", "luiz", 
+            "marques", "pedro", "rafael", "ronaldo", "tiago", "venâncio", 
+            "wender", "wisley", "ygor"
+        ];
+
+        const tempoTotalSeg = 120 * 60;
+        let estados = {};
+
+        function criarLista() {
+            const container = document.getElementById('lista');
+            document.getElementById('count-todos').innerText = motoristas.length;
+
+            motoristas.forEach((nome, index) => {
+                estados[index] = { segundos: 0, rodando: false, intervalo: null };
+                container.innerHTML += `
+                    <div class="card" id="card-${index}" data-status="parado">
+                        <div class="nome">${nome}</div>
+                        <input type="text" id="hora-${index}" class="input-hora" placeholder="Início">
+                        <button id="btn-${index}" class="btn-control btn-start" onclick="toggleTimer(${index})">Iniciar</button>
+                        <div class="wrapper-barra">
+                            <div class="progress-container"><div id="bar-${index}" class="progress-bar fase-red"></div></div>
+                            <div class="markers">
+                                <div class="marker" data-label="30m"></div><div class="marker" data-label="60m"></div>
+                                <div class="marker" data-label="90m"></div><div class="marker" data-label="120m"></div>
+                            </div>
+                        </div>
+                        <div id="relogio-${index}" class="relogio">120:00</div>
+                    </div>`;
+            });
+        }
+
+        function toggleTimer(id) {
+            const m = estados[id];
+            const btn = document.getElementById(`btn-${id}`);
+            const card = document.getElementById(`card-${id}`);
+            const inputHora = document.getElementById(`hora-${id}`);
+
+            if (!m.rodando) {
+                if (m.segundos === 0) {
+                    const agora = new Date();
+                    inputHora.value = agora.getHours().toString().padStart(2, '0') + ":" + agora.getMinutes().toString().padStart(2, '0');
+                }
+                m.rodando = true;
+                card.setAttribute('data-status', 'rodando');
+                btn.innerText = "Pausar"; btn.className = "btn-control btn-pause";
+                m.intervalo = setInterval(() => { m.segundos++; atualizarTela(id); }, 1000);
+            } else {
+                m.rodando = false;
+                card.setAttribute('data-status', 'pausado');
+                btn.innerText = "Retomar"; btn.className = "btn-control btn-start";
+                clearInterval(m.intervalo);
+            }
+        }
+
+        function atualizarTela(id) {
+            const m = estados[id];
+            const bar = document.getElementById(`bar-${id}`);
+            const relogio = document.getElementById(`relogio-${id}`);
+            const card = document.getElementById(`card-${id}`);
+
+            let tempoRestante = Math.max(0, tempoTotalSeg - m.segundos);
+            relogio.innerText = `${Math.floor(tempoRestante/60)}:${(tempoRestante%60).toString().padStart(2,'0')}`;
+            
+            let pct = (m.segundos / tempoTotalSeg) * 100;
+            bar.style.width = Math.min(100, pct) + "%";
+
+            let minPassados = m.segundos / 60;
+            if (minPassados > 40) bar.className = "progress-bar fase-orange";
+            if (minPassados > 80) bar.className = "progress-bar fase-green";
+
+            if (m.segundos >= tempoTotalSeg) {
+                clearInterval(m.intervalo);
+                card.setAttribute('data-status', 'finalizado');
+                relogio.innerText = "QHJ REALIZADO";
+                relogio.className = "relogio qhj-done";
+                document.getElementById(`btn-${id}`).style.display = "none";
+            }
+        }
+
+        function filtrar(status, btnElement) {
+            document.querySelectorAll('.filtros button').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+            document.querySelectorAll('.card').forEach(card => {
+                if (status === 'todos') card.classList.remove('hidden');
+                else card.getAttribute('data-status') === status ? card.classList.remove('hidden') : card.classList.add('hidden');
+            });
+        }
+
+        window.onload = criarLista;
+    </script>
+</body>
+</html>
