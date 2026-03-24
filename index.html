@@ -3,57 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Controle QHJ - Operacional</title>
+    <title>Controle QHJ - Master Operacional</title>
     <style>
-        :root { --primary: #2c3e50; --success: #198754; --warning: #ffc107; --danger: #dc3545; --bg: #f0f2f5; }
-        
+        :root { --primary: #2c3e50; --bg: #f0f2f5; --danger: #dc3545; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--primary); padding: 15px; }
 
         .header { position: sticky; top: 0; background: var(--bg); padding: 10px 0 20px; z-index: 100; border-bottom: 2px solid #ddd; margin-bottom: 20px; text-align: center; }
-        .filtros { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 15px; }
-        .filtros button { padding: 8px 16px; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; background: #fff; border: 1px solid #ccc; font-size: 0.85rem; }
+        .filtros { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+        .filtros button { padding: 8px 16px; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; background: #fff; border: 1px solid #ccc; font-size: 0.85rem; transition: 0.2s; }
         .filtros button.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        .card { 
-            background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
-            margin-bottom: 10px; display: flex; align-items: center; gap: 15px; transition: 0.3s;
-        }
         
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 10px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
         .nome { width: 130px; font-weight: bold; text-transform: capitalize; font-size: 1rem; }
-        .input-hora { width: 75px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; background: #f9f9f9; font-weight: bold; }
-        
-        .btn-control { width: 100px; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.7rem; }
-        .btn-start { background: var(--success); color: white; }
-        .btn-pause { background: var(--warning); color: #333; }
+        .input-hora, .input-motivo { padding: 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; font-weight: bold; }
+        .input-hora { width: 75px; background: #f9f9f9; }
+        .input-motivo { flex-grow: 1; min-width: 200px; font-size: 0.8rem; background: #fffde7; border-color: #ffe082; color: #856404; }
 
-        /* Barra de Progresso Adaptável */
-        .wrapper-barra { position: relative; flex-grow: 1; min-width: 200px; }
+        .btn-control { width: 100px; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.7rem; color: white; }
+        .btn-start { background: #198754; }
+        .btn-pause { background: #ffc107; color: #333; }
+
+        .wrapper-barra { position: relative; flex-grow: 1; min-width: 250px; }
         .progress-container { width: 100%; background: #eee; border-radius: 20px; height: 22px; overflow: hidden; border: 1px solid #ddd; position: relative; }
-        .progress-bar { width: 0%; height: 100%; transition: width 1s linear; }
+        .progress-bar { width: 0%; height: 100%; transition: width 0.5s linear; }
 
+        /* MARCADORES DE TEMPO */
         .markers { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; pointer-events: none; }
-        .marker { flex: 1; border-right: 1px dashed rgba(0,0,0,0.2); height: 100%; position: relative; }
+        .marker { flex: 1; border-right: 1px dashed rgba(0, 0, 0, 0.2); height: 100%; position: relative; }
         .marker::after { content: attr(data-label); position: absolute; bottom: -18px; right: -5px; font-size: 9px; color: #888; }
 
+        /* CORES DA REGRA */
+        .fase-red { background-color: #dc3545 !important; }
+        .fase-orange { background-color: #fd7e14 !important; }
+        .fase-yellow { background-color: #ffc107 !important; }
+        .fase-lightgreen { background-color: #90ee90 !important; }
+        .fase-blue { background-color: #0d6efd !important; }
+
         .relogio { min-width: 100px; font-family: monospace; font-size: 1.2rem; font-weight: bold; text-align: right; }
-        
-        .fase-red { background-color: var(--danger); }
-        .fase-orange { background-color: #fd7e14; }
-        .fase-green { background-color: var(--success); }
-        .qhj-done { color: var(--danger); animation: blink 0.8s infinite; }
+        .qhj-done { color: #0d6efd; font-weight: bold; }
         .hidden { display: none !important; }
 
-        @keyframes blink { 50% { opacity: 0; } }
-
-        /* RESPONSIVIDADE MOBILE */
         @media (max-width: 768px) {
-            .card { flex-wrap: wrap; justify-content: space-between; }
-            .nome { width: 50%; order: 1; }
-            .input-hora { width: 40%; order: 2; }
-            .btn-control { width: 100%; order: 5; margin-top: 5px; padding: 15px; font-size: 0.9rem; }
-            .wrapper-barra { width: 100%; order: 3; margin: 15px 0; }
-            .relogio { width: 100%; order: 4; text-align: center; font-size: 1.4rem; }
+            .card { flex-direction: column; align-items: stretch; text-align: center; }
+            .relogio { text-align: center; font-size: 1.5rem; }
         }
     </style>
 </head>
@@ -61,109 +54,151 @@
 
     <div class="header">
         <h1>Monitoramento QHJ</h1>
+        <div style="margin: 10px 0;">
+            <label style="font-weight: bold;">Data do Plantão:</label>
+            <input type="date" id="data-plantao" class="input-hora" style="width: 160px; margin-left: 10px;" onchange="salvarGlobal()">
+        </div>
         <div class="filtros">
             <button class="active" onclick="filtrar('todos', this)">Todos (<span id="count-todos">0</span>)</button>
             <button onclick="filtrar('rodando', this)">Em curso</button>
             <button onclick="filtrar('pausado', this)">Pausados</button>
             <button onclick="filtrar('finalizado', this)">Realizados</button>
+            <button onclick="gerarRelatorioEFinalizar()" style="background: #6f42c1; color: white; border-color: #5a32a3;">Baixar Relatório e Zerar Turno</button>
         </div>
     </div>
 
     <div id="lista"></div>
 
     <script>
-        // Lista atualizada e reordenada alfabeticamente
-        const motoristas = [
-            "alan", "carlos", "daniel", "david", "eder", "elcio", 
-            "fernando", "guilherme", "gustavo", "leandro", "luiz", 
-            "marques", "pedro", "rafael", "ronaldo", "tiago", "venâncio", 
-            "wender", "wisley", "ygor"
-        ];
-
+        const motoristas = ["alan", "carlos", "daniel", "david", "eder", "elcio", "fernando", "guilherme", "gustavo", "leandro", "luiz", "marques", "pedro", "rafael", "ronaldo", "tiago", "venâncio", "wender", "wisley", "ygor"];
         const tempoTotalSeg = 120 * 60;
         let estados = {};
 
+        function salvarGlobal() {
+            const dataP = document.getElementById('data-plantao').value;
+            const payload = { data: dataP, estados: {} };
+            Object.keys(estados).forEach(id => {
+                const { segundos, rodando, startTime, inputVal, motivo } = estados[id];
+                payload.estados[id] = { segundos, rodando, startTime, inputVal, motivo };
+            });
+            localStorage.setItem('qhj_master_final_v2', JSON.stringify(payload));
+        }
+
         function criarLista() {
             const container = document.getElementById('lista');
+            const salvos = JSON.parse(localStorage.getItem('qhj_master_final_v2')) || { estados: {} };
+            const dataInput = document.getElementById('data-plantao');
+            dataInput.value = salvos.data || new Date().toISOString().split('T')[0];
             document.getElementById('count-todos').innerText = motoristas.length;
 
             motoristas.forEach((nome, index) => {
-                estados[index] = { segundos: 0, rodando: false, intervalo: null };
+                const m = salvos.estados[index] || { segundos: 0, rodando: false, startTime: null, inputVal: "", motivo: "" };
+                estados[index] = m;
                 container.innerHTML += `
                     <div class="card" id="card-${index}" data-status="parado">
                         <div class="nome">${nome}</div>
-                        <input type="text" id="hora-${index}" class="input-hora" placeholder="Início">
+                        <input type="text" id="hora-${index}" class="input-hora" value="${m.inputVal}" placeholder="00:00" maxlength="5" oninput="mascara(this)" onchange="inputManual(${index})">
+                        <input type="text" id="motivo-${index}" class="input-motivo ${m.motivo ? '' : 'hidden'}" value="${m.motivo}" placeholder="Motivo da interrupção..." onchange="salvarMotivo(${index})">
                         <button id="btn-${index}" class="btn-control btn-start" onclick="toggleTimer(${index})">Iniciar</button>
                         <div class="wrapper-barra">
-                            <div class="progress-container"><div id="bar-${index}" class="progress-bar fase-red"></div></div>
-                            <div class="markers">
-                                <div class="marker" data-label="30m"></div><div class="marker" data-label="60m"></div>
-                                <div class="marker" data-label="90m"></div><div class="marker" data-label="120m"></div>
+                            <div class="progress-container">
+                                <div id="bar-${index}" class="progress-bar fase-red"></div>
+                                <div class="markers">
+                                    <div class="marker" data-label="30m"></div>
+                                    <div class="marker" data-label="60m"></div>
+                                    <div class="marker" data-label="90m"></div>
+                                    <div class="marker" data-label="120m"></div>
+                                </div>
                             </div>
                         </div>
                         <div id="relogio-${index}" class="relogio">120:00</div>
                     </div>`;
+                if (m.rodando) {
+                    m.segundos = Math.floor((Date.now() - m.startTime) / 1000);
+                    m.segundos >= tempoTotalSeg ? finalizar(index) : rodarLoop(index);
+                } else if (m.segundos >= tempoTotalSeg) { finalizar(index); }
+                else { atualizarTela(index); if (m.segundos > 0) { document.getElementById(`btn-${index}`).innerText = "Retomar"; document.getElementById(`card-${index}`).setAttribute('data-status', 'pausado'); } }
             });
+        }
+
+        function gerarRelatorioEFinalizar() {
+            const temDados = Object.values(estados).some(m => m.segundos > 0);
+            if (!temDados) { alert("Não há dados para exportar."); return; }
+            if (!confirm("O relatório será baixado e o painel será TOTALMENTE ZERADO. Confirma?")) return;
+
+            const dataP = document.getElementById('data-plantao').value;
+            let csv = `RELATORIO AUDITAVEL QHJ;PLANTAO:;${dataP}\n`;
+            csv += "MOTORISTA;HORA INICIO;MINUTOS GOZADOS;STATUS;MOTIVO INTERRUPCAO\n";
+            motoristas.forEach((nome, i) => {
+                const m = estados[i];
+                const st = m.segundos >= tempoTotalSeg ? 'CONCLUIDO' : (m.segundos > 0 ? 'INTERROMPIDO' : 'NAO INICIADO');
+                csv += `${nome.toUpperCase()};${m.inputVal || 'N/A'};${Math.floor(m.segundos / 60)};${st};${m.motivo || ''}\n`;
+            });
+
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `RELATORIO_QHJ_${dataP}.csv`;
+            link.click();
+
+            setTimeout(() => { localStorage.removeItem('qhj_master_final_v2'); location.reload(); }, 1000);
         }
 
         function toggleTimer(id) {
-            const m = estados[id];
-            const btn = document.getElementById(`btn-${id}`);
-            const card = document.getElementById(`card-${id}`);
-            const inputHora = document.getElementById(`hora-${id}`);
-
+            const m = estados[id]; const btn = document.getElementById(`btn-${id}`); const inputH = document.getElementById(`hora-${id}`); const inputM = document.getElementById(`motivo-${id}`);
             if (!m.rodando) {
-                if (m.segundos === 0) {
-                    const agora = new Date();
-                    inputHora.value = agora.getHours().toString().padStart(2, '0') + ":" + agora.getMinutes().toString().padStart(2, '0');
-                }
-                m.rodando = true;
-                card.setAttribute('data-status', 'rodando');
-                btn.innerText = "Pausar"; btn.className = "btn-control btn-pause";
-                m.intervalo = setInterval(() => { m.segundos++; atualizarTela(id); }, 1000);
+                if (!inputH.value) { const agora = new Date(); inputH.value = agora.getHours().toString().padStart(2,'0') + ":" + agora.getMinutes().toString().padStart(2,'0'); m.startTime = agora.getTime(); m.segundos = 0; m.inputVal = inputH.value; }
+                else { m.startTime = Date.now() - (m.segundos * 1000); }
+                m.rodando = true; inputM.classList.add('hidden'); rodarLoop(id);
             } else {
-                m.rodando = false;
-                card.setAttribute('data-status', 'pausado');
-                btn.innerText = "Retomar"; btn.className = "btn-control btn-start";
-                clearInterval(m.intervalo);
+                const motivo = prompt("Motivo da interrupção:");
+                if (motivo) {
+                    m.rodando = false; m.motivo = motivo; clearInterval(m.intervalo);
+                    inputM.value = motivo; inputM.classList.remove('hidden');
+                    btn.innerText = "Retomar"; btn.className = "btn-control btn-start";
+                    document.getElementById(`card-${id}`).setAttribute('data-status', 'pausado');
+                }
             }
+            salvarGlobal();
+        }
+
+        function rodarLoop(id) {
+            const m = estados[id]; document.getElementById(`card-${id}`).setAttribute('data-status', 'rodando'); const btn = document.getElementById(`btn-${id}`); btn.innerText = "Pausar"; btn.className = "btn-control btn-pause";
+            m.intervalo = setInterval(() => {
+                m.segundos = Math.floor((Date.now() - m.startTime) / 1000);
+                if (m.segundos >= tempoTotalSeg) { finalizar(id); salvarGlobal(); } else { atualizarTela(id); if (m.segundos % 10 === 0) salvarGlobal(); }
+            }, 1000);
         }
 
         function atualizarTela(id) {
-            const m = estados[id];
-            const bar = document.getElementById(`bar-${id}`);
-            const relogio = document.getElementById(`relogio-${id}`);
-            const card = document.getElementById(`card-${id}`);
-
-            let tempoRestante = Math.max(0, tempoTotalSeg - m.segundos);
-            relogio.innerText = `${Math.floor(tempoRestante/60)}:${(tempoRestante%60).toString().padStart(2,'0')}`;
-            
-            let pct = (m.segundos / tempoTotalSeg) * 100;
-            bar.style.width = Math.min(100, pct) + "%";
-
-            let minPassados = m.segundos / 60;
-            if (minPassados > 40) bar.className = "progress-bar fase-orange";
-            if (minPassados > 80) bar.className = "progress-bar fase-green";
-
-            if (m.segundos >= tempoTotalSeg) {
-                clearInterval(m.intervalo);
-                card.setAttribute('data-status', 'finalizado');
-                relogio.innerText = "QHJ REALIZADO";
-                relogio.className = "relogio qhj-done";
-                document.getElementById(`btn-${id}`).style.display = "none";
-            }
+            const m = estados[id], bar = document.getElementById(`bar-${id}`), rel = document.getElementById(`relogio-${id}`);
+            const rest = Math.max(0, tempoTotalSeg - m.segundos);
+            rel.innerText = `${Math.floor(rest / 60)}:${(rest % 60).toString().padStart(2, '0')}`;
+            bar.style.width = Math.min(100, (m.segundos / tempoTotalSeg) * 100) + "%";
+            const min = m.segundos / 60;
+            if (min > 90) bar.className = "progress-bar fase-lightgreen";
+            else if (min > 60) bar.className = "progress-bar fase-yellow";
+            else if (min > 30) bar.className = "progress-bar fase-orange";
+            else bar.className = "progress-bar fase-red";
         }
 
-        function filtrar(status, btnElement) {
-            document.querySelectorAll('.filtros button').forEach(b => b.classList.remove('active'));
-            btnElement.classList.add('active');
-            document.querySelectorAll('.card').forEach(card => {
-                if (status === 'todos') card.classList.remove('hidden');
-                else card.getAttribute('data-status') === status ? card.classList.remove('hidden') : card.classList.add('hidden');
-            });
+        function finalizar(id) {
+            const m = estados[id]; clearInterval(m.intervalo); m.rodando = false; m.segundos = tempoTotalSeg;
+            const rel = document.getElementById(`relogio-${id}`), card = document.getElementById(`card-${id}`), bar = document.getElementById(`bar-${id}`), btn = document.getElementById(`btn-${id}`);
+            card.setAttribute('data-status', 'finalizado'); rel.innerText = "QHJ REALIZADO"; rel.className = "relogio qhj-done"; bar.style.width = "100%"; bar.className = "progress-bar fase-blue"; btn.style.display = "none";
         }
 
-        window.onload = criarLista;
+        function mascara(i) { let v = i.value.replace(/\D/g, ""); if (v.length >= 3) i.value = v.substring(0, 2) + ":" + v.substring(2, 4); else i.value = v; }
+        function inputManual(id) {
+            const input = document.getElementById(`hora-${id}`); let v = input.value.replace(/\D/g, ""); if (v.length < 3) return; if (v.length === 3) v = "0" + v;
+            const saida = new Date(); saida.setHours(v.substring(0,2), v.substring(2,4), 0, 0); if (saida > new Date()) saida.setDate(saida.getDate() - 1);
+            estados[id].segundos = Math.floor((new Date() - saida) / 1000); estados[id].startTime = saida.getTime(); estados[id].inputVal = input.value;
+            estados[id].segundos >= tempoTotalSeg ? finalizar(id) : atualizarTela(id); salvarGlobal();
+        }
+        function salvarMotivo(id) { estados[id].motivo = document.getElementById(`motivo-${id}`).value; salvarGlobal(); }
+        function filtrar(s, btn) { document.querySelectorAll('.filtros button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.card').forEach(c => c.classList.toggle('hidden', s !== 'todos' && c.getAttribute('data-status') !== s)); }
+
+        criarLista();
     </script>
 </body>
 </html>
